@@ -26,8 +26,10 @@ warn() { printf '\033[1;33m[주의]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[오류]\033[0m %s\n' "$*" >&2; exit 1; }
 
 wine_env() {
+    # macOS 터미널 기본 열린 파일 한도(256)로는 esync가 핸들이 모자라 Battle.net Agent가 죽는다.
+    ulimit -n 10240 2>/dev/null || ulimit -n "$(ulimit -Hn)" 2>/dev/null || true
     export WINEPREFIX="$BOTTLE"
-    export WINEESYNC=1
+    export WINEESYNC="${D2R_ESYNC:-1}"
     export WINEDEBUG="${WINEDEBUG:--all}"
     export PATH="$WINE_BIN:$PATH"
 }
@@ -111,6 +113,10 @@ apply_korean_fonts() {
 reset_battlenet_agent() {
     wine_env
     wineserver -k 2>/dev/null || true
+    # 원인 파악용으로 Agent 로그는 남겨 둔다.
+    local logs="$BOTTLE/agent-logs/$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$logs"
+    find "$BOTTLE/drive_c/ProgramData/Battle.net" -name '*.log' -exec cp {} "$logs/" \; 2>/dev/null || true
     rm -rf "$BOTTLE/drive_c/ProgramData/Battle.net"
 }
 
@@ -138,7 +144,9 @@ install_battlenet() {
     done
 
     if [ ! -f "$BNET_UNIX" ]; then
-        warn "Battle.net 설치에 실패했습니다. 로그: $LOG"
+        warn "Battle.net 설치에 실패했습니다."
+        warn "아래 명령 결과를 Claude에게 보내 주세요:"
+        echo "  ulimit -n; tail -n 30 \"$BOTTLE\"/agent-logs/*/*.log"
         exit 1
     fi
     rm -f "$setup"
@@ -148,6 +156,7 @@ make_launcher() {
     say "바탕화면에 실행 아이콘 생성: $LAUNCHER"
     cat >"$LAUNCHER" <<EOF
 #!/bin/bash
+ulimit -n 10240 2>/dev/null || ulimit -n "\$(ulimit -Hn)" 2>/dev/null
 export WINEPREFIX="$BOTTLE"
 export WINEESYNC=1
 export WINEDEBUG=-all
