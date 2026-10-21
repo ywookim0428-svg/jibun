@@ -174,14 +174,12 @@ apply_korean_fonts() {
     touch "$BOTTLE/.korean-fonts"
 }
 
-reset_battlenet_agent() {
+save_agent_logs() {
     wine_env
     wineserver -k 2>/dev/null || true
-    # 원인 파악용으로 Agent 로그는 남겨 둔다.
     local logs="$BOTTLE/agent-logs/$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$logs"
     find "$BOTTLE/drive_c/ProgramData/Battle.net" -name '*.log' -exec cp {} "$logs/" \; 2>/dev/null || true
-    rm -rf "$BOTTLE/drive_c/ProgramData/Battle.net"
 }
 
 install_battlenet() {
@@ -190,28 +188,32 @@ install_battlenet() {
         say "Battle.net 이미 설치됨"
         return
     fi
-    local setup="$BOTTLE/Battle.net-Setup.exe"
+    # 설치 파일은 Windows C: 드라이브 안에 둔다. 맥 폴더(Z: 드라이브)에서 실행하면
+    # Update Agent가 호출한 쪽의 서명을 확인하지 못해("Failed Caller authorization due to
+    # signature") 설치가 45%에서 멈춘다.
+    local dl="$BOTTLE/drive_c/users/Public/Downloads"
+    local setup="$dl/Battle.net-Setup.exe"
+    local setup_win='C:\users\Public\Downloads\Battle.net-Setup.exe'
+    mkdir -p "$dl"
+    rm -f "$BOTTLE/Battle.net-Setup.exe"
     say "Battle.net 설치 파일 다운로드"
     curl -fL --retry 3 -o "$setup" "$BNET_URL"
 
-    # 첫 실행 때 Update Agent가 늦게 떠서 BLZBNTBTS0000005C(1분 응답 없음)가
-    # 날 수 있다. 남은 Agent를 정리하고 몇 번 다시 시도한다.
     local attempt
-    for attempt in 1 2 3; do
-        say "Battle.net 설치 프로그램 실행 ($attempt/3) - 창이 뜨면 안내대로 진행하세요"
-        say "  오류 창(BLZBNTBTS0000005C 등)이 뜨면 그 창을 닫으세요. 자동으로 다시 시도합니다."
+    for attempt in 1 2; do
+        say "Battle.net 설치 프로그램 실행 ($attempt/2) - 창이 뜨면 안내대로 진행하세요"
         say "  설치가 끝나고 로그인 창이 뜨면 그 창을 닫으세요."
-        wine "$setup" --lang="$BNET_LANG" >>"$LOG" 2>&1 || true
+        (cd "$dl" && wine "$setup_win" --lang="$BNET_LANG") >>"$LOG" 2>&1 || true
         wineserver -w
         [ -f "$BNET_UNIX" ] && break
-        warn "Battle.net 설치가 끝나지 않았습니다. Agent를 정리하고 다시 시도합니다."
-        reset_battlenet_agent
+        warn "Battle.net 설치가 끝나지 않았습니다. 다시 시도합니다."
+        save_agent_logs
     done
 
     if [ ! -f "$BNET_UNIX" ]; then
-        warn "Battle.net 설치에 실패했습니다."
-        warn "아래 명령 결과를 Claude에게 보내 주세요:"
-        echo "  tail -n 30 \"$BOTTLE\"/agent-logs/*/*.log; tail -n 30 \"$LOG\""
+        warn "Battle.net 설치에 실패했습니다. Agent 오류 요약:"
+        grep -hE '^\[(E|F) ' "$BOTTLE"/agent-logs/*/*.log 2>/dev/null | cut -c30- | sort | uniq -c | sort -rn | head -10
+        warn "위 내용을 Claude에게 보내 주세요."
         exit 1
     fi
     rm -f "$setup"
