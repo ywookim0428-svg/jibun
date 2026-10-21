@@ -2,7 +2,7 @@
 
 CrossOver 없이 무료로 D2R을 실행합니다.
 - Wine: Sikarugir가 배포하는 CrossOver 24 소스 기반 엔진 (GPTK의 Wine 7.7은 현재 Battle.net이 동작하지 않음)
-- DirectX 12: Game Porting Toolkit의 D3DMetal
+- 라이브러리와 DirectX 12(D3DMetal): Sikarugir 템플릿에 들어 있는 것을 사용
 
 ## 필요 조건
 - Apple Silicon 맥 (M1 이상)
@@ -19,12 +19,10 @@ bash ~/jibun/d2r-mac/setup-d2r.sh
 ```
 
 스크립트가 하는 일:
-1. Homebrew가 없으면 설치합니다.
-2. `gcenx/wine/game-porting-toolkit`을 설치합니다 (D3DMetal을 가져오는 용도).
-3. `~/Games/D2R-Engine`에 CrossOver 24 기반 Wine 엔진을 받습니다.
-4. `~/Games/D2R`에 Windows 10 환경을 만듭니다.
-5. Battle.net을 내려받아 설치합니다. 창이 뜨면 안내대로 진행하세요.
-6. 엔진에 D3DMetal을 연결하고, 바탕화면에 **디아블로2 레저렉션** 실행 아이콘을 만듭니다.
+1. `~/Games/D2R-Engine`에 Sikarugir 템플릿과 CrossOver 24 기반 Wine 엔진을 받습니다 (약 270MB).
+2. `~/Games/D2R`에 Windows 10 환경을 만듭니다.
+3. Battle.net을 내려받아 설치합니다. 창이 뜨면 안내대로 진행하세요.
+4. 엔진에 D3DMetal을 연결하고, 바탕화면에 **디아블로2 레저렉션** 실행 아이콘을 만듭니다.
 
 이후에는 바탕화면 아이콘을 더블클릭해서 Battle.net에 로그인하고 D2R을 설치하면 됩니다.
 

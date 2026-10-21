@@ -1,31 +1,35 @@
 #!/bin/bash
 # 디아블로2 레저렉션을 Apple Silicon 맥에서 무료로 실행하기 위한 설치/실행 스크립트.
 #
-# 구성:
-#   - Wine: Sikarugir 프로젝트가 배포하는 CrossOver 24 소스 기반 엔진(WineCX 24).
-#     GPTK에 들어 있는 Wine 7.7은 너무 오래돼 현재 Battle.net Update Agent가 뜨지 않는다.
-#   - D3DMetal(DirectX 11/12 -> Metal): Gcenx의 Game Porting Toolkit 패키지에서 가져와 엔진에 붙인다.
+# 구성 (모두 Sikarugir 프로젝트의 무료 배포본):
+#   - Wine 엔진: CrossOver 24 소스 기반 WineCX 24 (예전 GPTK의 Wine 7.7은 현재 Battle.net이 안 뜸)
+#   - 템플릿: 엔진이 쓰는 라이브러리(freetype, libinotify, MoltenVK 등)와
+#     이 엔진용 D3DMetal(DirectX 11/12 -> Metal)이 들어 있다.
 #
 # 사용법:
-#   ./setup-d2r.sh            설치 (Homebrew, GPTK, Wine 엔진, Bottle, Battle.net, 바탕화면 실행 아이콘)
-#   ./setup-d2r.sh launch     Battle.net 실행
-#   ./setup-d2r.sh winecfg    Wine 설정 창 열기
+#   ./setup-d2r.sh               설치 (엔진, Bottle, Battle.net, 바탕화면 실행 아이콘)
+#   ./setup-d2r.sh launch        Battle.net 실행
+#   ./setup-d2r.sh winecfg       Wine 설정 창 열기
 #   ./setup-d2r.sh d3dmetal-off  D3DMetal 끄기 (Battle.net 화면이 깨질 때)
 #   ./setup-d2r.sh d3dmetal-on   D3DMetal 다시 켜기 (D2R은 DX12라 켜야 실행됨)
-#   ./setup-d2r.sh uninstall  Bottle, 엔진, 실행 아이콘 삭제 (GPTK는 남겨 둠)
+#   ./setup-d2r.sh uninstall     Bottle, 엔진, 실행 아이콘 삭제
 
-set -euo pipefail
+set -Eeuo pipefail
 
 GAMES="$HOME/Games"
 BOTTLE="${D2R_BOTTLE:-$GAMES/D2R}"
+RUNTIME="$GAMES/D2R-Engine"
+SK_URL="https://github.com/Sikarugir-App"
 ENGINE_NAME="WS12WineCX24.0.7_7"
-ENGINE_URL="https://github.com/Sikarugir-App/Engines/releases/download/v1.0/$ENGINE_NAME.tar.xz"
-ENGINE="$GAMES/D2R-Engine/$ENGINE_NAME/wswine.bundle"
+TEMPLATE_NAME="Template-1.0.24"
+ENGINE_URL="$SK_URL/Engines/releases/download/v1.0/$ENGINE_NAME.tar.xz"
+TEMPLATE_URL="$SK_URL/Wrapper/releases/download/v1.0/$TEMPLATE_NAME.tar.xz"
+CONTENTS="$RUNTIME/$TEMPLATE_NAME.app/Contents"
+FRAMEWORKS="$CONTENTS/Frameworks"
+# 엔진의 rpath(@loader_path/../../)가 Frameworks 폴더를 가리키도록 그 안에 둔다.
+ENGINE="$FRAMEWORKS/wswine.bundle"
 WINE_BIN="$ENGINE/bin"
-GPTK_APP="/Applications/Game Porting Toolkit.app"
-GPTK_WINE="$GPTK_APP/Contents/Resources/wine"
-# GPTK에서 가져오는 D3DMetal 구성 요소 (PE dll + unix so)
-D3DM_DLLS="d3d10 d3d11 d3d12 dxgi atidxx64 nvapi64 nvngx nvngx-on-metalfx"
+D3DM_SRC="$CONTENTS/SharedSupport/renderer/d3dmetal"
 BNET_URL="https://www.battle.net/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live"
 # Battle.net 화면 언어. 한글 글꼴이 깨질 때를 대비해 기본은 영어(게임 언어는 따로 한국어로 설정 가능).
 BNET_LANG="${D2R_BNET_LANG:-enUS}"
@@ -45,7 +49,18 @@ wine_env() {
     export WINEMSYNC=1
     export WINEDEBUG="${WINEDEBUG:--all}"
     export PATH="$WINE_BIN:$PATH"
+    export DYLD_FALLBACK_LIBRARY_PATH="$FRAMEWORKS:/usr/lib"
 }
+
+on_error() {
+    printf '\033[1;31m[오류]\033[0m %s번째 줄에서 실패했습니다.\n' "$1" >&2
+    if [ -f "$LOG" ]; then
+        echo "---- 로그 마지막 부분 ($LOG) ----" >&2
+        tail -n 25 "$LOG" >&2
+        echo "---- 위 내용을 Claude에게 보내 주세요 ----" >&2
+    fi
+}
+trap 'on_error $LINENO' ERR
 
 check_system() {
     [ "$(uname -s)" = "Darwin" ] || die "맥(macOS)에서 실행해야 합니다."
@@ -64,81 +79,63 @@ check_system() {
     fi
 }
 
-ensure_brew() {
-    if ! command -v brew >/dev/null 2>&1; then
-        if [ -x /opt/homebrew/bin/brew ]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        else
-            say "Homebrew 설치 (맥 로그인 비밀번호를 물어볼 수 있습니다)"
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        fi
-    fi
-}
-
-# D3DMetal을 얻기 위해서만 쓴다.
-ensure_gptk() {
-    if [ -d "$GPTK_WINE/lib/external/D3DMetal.framework" ]; then
-        say "Game Porting Toolkit(D3DMetal) 이미 설치됨"
-        return
-    fi
-    ensure_brew
-    say "Game Porting Toolkit(D3DMetal) 설치 - 약 240MB"
-    brew tap gcenx/wine
-    brew install --cask gcenx/wine/game-porting-toolkit
-    [ -d "$GPTK_WINE/lib/external/D3DMetal.framework" ] || die "GPTK 설치 후에도 D3DMetal이 없습니다."
+fetch() {
+    # fetch <url> <대상 폴더>
+    local tmp="$RUNTIME/download.tar.xz"
+    curl -fL --retry 3 -o "$tmp" "$1"
+    tar -xJf "$tmp" -C "$2"
+    rm -f "$tmp"
 }
 
 ensure_engine() {
-    if [ -x "$WINE_BIN/wine" ]; then
+    if [ -x "$WINE_BIN/wine" ] && [ -f "$FRAMEWORKS/libinotify.0.dylib" ]; then
         say "Wine 엔진 이미 준비됨: $(cat "$ENGINE/version" 2>/dev/null)"
         return
     fi
-    local dir tmp
-    dir="$(dirname "$ENGINE")"
-    tmp="$GAMES/D2R-Engine/$ENGINE_NAME.tar.xz"
-    mkdir -p "$dir"
+    rm -rf "$RUNTIME"
+    mkdir -p "$RUNTIME"
+    say "Sikarugir 템플릿(라이브러리 + D3DMetal) 다운로드 - 약 100MB"
+    fetch "$TEMPLATE_URL" "$RUNTIME"
     say "최신 Wine 엔진(CrossOver 24 기반) 다운로드 - 약 170MB"
-    curl -fL --retry 3 -o "$tmp" "$ENGINE_URL"
-    tar -xJf "$tmp" -C "$dir"
-    rm -f "$tmp"
-    xattr -dr com.apple.quarantine "$dir" 2>/dev/null || true
+    fetch "$ENGINE_URL" "$FRAMEWORKS"
+    xattr -dr com.apple.quarantine "$RUNTIME" 2>/dev/null || true
     [ -x "$WINE_BIN/wine" ] || die "엔진 압축을 풀었지만 $WINE_BIN/wine 이 없습니다."
+    [ -f "$FRAMEWORKS/libinotify.0.dylib" ] || die "템플릿에 libinotify가 없습니다."
 }
 
-# GPTK의 D3DMetal을 엔진에 붙인다. 원래 파일은 $ENGINE/.stock 에 보관해 되돌릴 수 있게 한다.
+# 템플릿의 D3DMetal을 엔진에 붙인다. 원래 파일은 $ENGINE/.stock 에 보관해 되돌릴 수 있게 한다.
+d3dmetal_files() {
+    (cd "$D3DM_SRC/wine" && find . -type f \( -name '*.dll' -o -name '*.so' \) | sed 's#^\./##')
+}
+
 d3dmetal_on() {
     [ -f "$ENGINE/.d3dmetal" ] && return
+    [ -d "$D3DM_SRC/external" ] || die "템플릿에 D3DMetal이 없습니다: $D3DM_SRC"
     say "D3DMetal(DirectX 12 -> Metal)을 엔진에 연결"
-    local d sub
-    mkdir -p "$ENGINE/lib/external" "$ENGINE/.stock/x86_64-windows" "$ENGINE/.stock/x86_64-unix"
-    cp -R "$GPTK_WINE/lib/external/." "$ENGINE/lib/external/"
-    for d in $D3DM_DLLS; do
-        for sub in "x86_64-windows/$d.dll" "x86_64-unix/$d.so"; do
-            [ -f "$GPTK_WINE/lib/wine/$sub" ] || continue
-            if [ -f "$ENGINE/lib/wine/$sub" ] && [ ! -f "$ENGINE/.stock/$sub" ]; then
-                cp -f "$ENGINE/lib/wine/$sub" "$ENGINE/.stock/$sub"
-            fi
-            cp -f "$GPTK_WINE/lib/wine/$sub" "$ENGINE/lib/wine/$sub"
-        done
-    done
-    codesign --force --deep -s - "$(dirname "$ENGINE")" >/dev/null 2>&1 || true
+    mkdir -p "$ENGINE/lib/external"
+    cp -R "$D3DM_SRC/external/." "$ENGINE/lib/external/"
+    local f
+    while IFS= read -r f; do
+        if [ -f "$ENGINE/lib/wine/$f" ] && [ ! -f "$ENGINE/.stock/$f" ]; then
+            mkdir -p "$(dirname "$ENGINE/.stock/$f")"
+            cp -f "$ENGINE/lib/wine/$f" "$ENGINE/.stock/$f"
+        fi
+        cp -f "$D3DM_SRC/wine/$f" "$ENGINE/lib/wine/$f"
+    done < <(d3dmetal_files)
     touch "$ENGINE/.d3dmetal"
 }
 
 d3dmetal_off() {
     [ -f "$ENGINE/.d3dmetal" ] || { say "D3DMetal이 이미 꺼져 있습니다."; return; }
     say "D3DMetal 끄기 (엔진 원래 파일로 복원)"
-    local d sub
-    for d in $D3DM_DLLS; do
-        for sub in "x86_64-windows/$d.dll" "x86_64-unix/$d.so"; do
-            if [ -f "$ENGINE/.stock/$sub" ]; then
-                cp -f "$ENGINE/.stock/$sub" "$ENGINE/lib/wine/$sub"
-            elif [ -f "$GPTK_WINE/lib/wine/$sub" ]; then
-                rm -f "$ENGINE/lib/wine/$sub"
-            fi
-        done
-    done
+    local f
+    while IFS= read -r f; do
+        if [ -f "$ENGINE/.stock/$f" ]; then
+            cp -f "$ENGINE/.stock/$f" "$ENGINE/lib/wine/$f"
+        else
+            rm -f "$ENGINE/lib/wine/$f"
+        fi
+    done < <(d3dmetal_files)
     rm -f "$ENGINE/.d3dmetal"
 }
 
@@ -229,6 +226,7 @@ export WINEPREFIX="$BOTTLE"
 export WINEMSYNC=1
 export WINEDEBUG=-all
 export PATH="$WINE_BIN:\$PATH"
+export DYLD_FALLBACK_LIBRARY_PATH="$FRAMEWORKS:/usr/lib"
 nohup wine '$BNET_EXE' >>"$LOG" 2>&1 &
 echo "Battle.net을 실행했습니다. 이 창은 닫아도 됩니다."
 EOF
@@ -240,14 +238,13 @@ cleanup_old_bottle() {
     local old="$GAMES/D2R-Bottle"
     if [ -d "$old" ] && [ "$old" != "$BOTTLE" ]; then
         say "이전 버전의 Bottle 정리: $old"
-        WINEPREFIX="$old" "$GPTK_WINE/bin/wineserver" -k 2>/dev/null || true
+        pkill -f 'Game Porting Toolkit.app/Contents/Resources/wine' 2>/dev/null || true
         rm -rf "$old"
     fi
 }
 
 cmd_install() {
     check_system
-    ensure_gptk
     cleanup_old_bottle
     ensure_engine
     mkdir -p "$BOTTLE"
@@ -285,7 +282,10 @@ cmd_uninstall() {
         WINEPREFIX="$BOTTLE" "$WINE_BIN/wineserver" -k 2>/dev/null || true
     fi
     rm -rf "$BOTTLE" "$GAMES/D2R-Engine" "$LAUNCHER"
-    say "삭제했습니다. GPTK까지 지우려면: brew uninstall --cask game-porting-toolkit"
+    say "삭제했습니다."
+    if [ -d "/Applications/Game Porting Toolkit.app" ]; then
+        say "예전에 설치한 GPTK는 이제 쓰지 않습니다. 지우려면: brew uninstall --cask game-porting-toolkit"
+    fi
 }
 
 case "${1:-install}" in
