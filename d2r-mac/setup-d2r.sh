@@ -14,6 +14,8 @@ BOTTLE="${D2R_BOTTLE:-$HOME/Games/D2R-Bottle}"
 GPTK_APP="/Applications/Game Porting Toolkit.app"
 WINE_BIN="$GPTK_APP/Contents/Resources/wine/bin"
 BNET_URL="https://www.battle.net/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live"
+# Battle.net 화면 언어. 한글 글꼴이 깨질 때를 대비해 기본은 영어(게임 언어는 따로 한국어로 설정 가능).
+BNET_LANG="${D2R_BNET_LANG:-enUS}"
 BNET_EXE='C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe'
 BNET_UNIX="$BOTTLE/drive_c/Program Files (x86)/Battle.net/Battle.net Launcher.exe"
 LAUNCHER="$HOME/Desktop/디아블로2 레저렉션.command"
@@ -84,6 +86,32 @@ create_bottle() {
     # Battle.net과 D2R은 Windows 10 이상을 요구한다.
     wine64 winecfg -v win10 >>"$LOG" 2>&1
     wineserver -w
+    apply_korean_fonts
+}
+
+# Windows 글꼴(맑은 고딕, Segoe UI 등)이 없어 한글이 네모로 보이는 것을 막기 위해
+# 맥에 기본으로 있는 Apple SD Gothic Neo로 대체/연결한다.
+apply_korean_fonts() {
+    wine_env
+    [ -f "$BOTTLE/.korean-fonts" ] && return
+    say "한글 글꼴 연결 (Apple SD Gothic Neo)"
+    local f
+    for f in "Malgun Gothic" "Gulim" "Dotum" "Batang"; do
+        wine64 reg add 'HKCU\Software\Wine\Fonts\Replacements' /v "$f" /t REG_SZ \
+            /d "Apple SD Gothic Neo" /f >>"$LOG" 2>&1
+    done
+    for f in "Segoe UI" "Tahoma" "Arial" "Microsoft Sans Serif" "MS Shell Dlg" "MS Shell Dlg 2"; do
+        wine64 reg add 'HKLM\Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink' /v "$f" \
+            /t REG_MULTI_SZ /d "AppleSDGothicNeo.ttc,Apple SD Gothic Neo" /f >>"$LOG" 2>&1
+    done
+    wineserver -w
+    touch "$BOTTLE/.korean-fonts"
+}
+
+reset_battlenet_agent() {
+    wine_env
+    wineserver -k 2>/dev/null || true
+    rm -rf "$BOTTLE/drive_c/ProgramData/Battle.net"
 }
 
 install_battlenet() {
@@ -96,12 +124,21 @@ install_battlenet() {
     say "Battle.net 설치 파일 다운로드"
     curl -fL --retry 3 -o "$setup" "$BNET_URL"
 
-    say "Battle.net 설치 프로그램 실행 - 창이 뜨면 안내대로 진행하세요"
-    wine64 "$setup" --lang=koKR >>"$LOG" 2>&1 || true
-    wineserver -w
+    # Wine에서는 첫 실행 때 Update Agent가 늦게 떠서 BLZBNTBTS0000005C(1분 응답 없음)가
+    # 나기 쉽다. 남은 Agent를 정리하고 몇 번 다시 시도한다.
+    local attempt
+    for attempt in 1 2 3; do
+        say "Battle.net 설치 프로그램 실행 ($attempt/3) - 창이 뜨면 안내대로 진행하세요"
+        say "  오류 창(BLZBNTBTS0000005C 등)이 뜨면 그 창을 닫으세요. 자동으로 다시 시도합니다."
+        wine64 "$setup" --lang="$BNET_LANG" >>"$LOG" 2>&1 || true
+        wineserver -w
+        [ -f "$BNET_UNIX" ] && break
+        warn "Battle.net 설치가 끝나지 않았습니다. Agent를 정리하고 다시 시도합니다."
+        reset_battlenet_agent
+    done
 
     if [ ! -f "$BNET_UNIX" ]; then
-        warn "Battle.net 설치가 끝나지 않은 것 같습니다. '$0' 를 다시 실행해 보세요. 로그: $LOG"
+        warn "Battle.net 설치에 실패했습니다. 로그: $LOG"
         exit 1
     fi
     rm -f "$setup"
