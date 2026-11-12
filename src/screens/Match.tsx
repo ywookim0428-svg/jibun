@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { hunEum, type LevelData } from '../data'
-import { Done, Hj, TopBar } from '../components/ui'
+import { Done, Hj, Icon, TopBar } from '../components/ui'
 import { shuffle } from '../lib/quiz'
 import { sfx } from '../lib/sound'
 import { addStars, awardSticker, getState, setState } from '../lib/store'
@@ -51,7 +51,7 @@ export function Match({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
   }
   if (result) {
     return (
-      <Done title={result.record ? '새 기록이에요! 🏅' : '짝을 다 찾았어요!'} message={`${result.sec.toFixed(1)}초 걸렸어요 · 가장 빠른 기록 ${result.best.toFixed(1)}초`} stars={3} sticker={result.sticker} actions={<>
+      <Done title={result.record ? '새 기록이에요' : '짝을 다 찾았어요'} message={`${result.sec.toFixed(1)}초 걸렸어요 · 가장 빠른 기록 ${result.best.toFixed(1)}초`} stars={3} sticker={result.sticker} actions={<>
         <button className="btn" onClick={() => { setGone([]); setSel(null); setResult(null); setStart(Date.now()); setNow(Date.now()); setRound(round + 1) }}>한 번 더!</button>
         <button className="btn ghost" onClick={back}>그만하기</button>
       </>} />
@@ -59,8 +59,7 @@ export function Match({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
   }
   return (
     <div className="page run">
-      <TopBar title="짝 맞추기" onBack={back} right={<span className="chip">⏱ {((now - start) / 1000).toFixed(1)}초</span>} />
-      <p className="count">한자와 뜻·소리를 짝지어요</p>
+      <TopBar title="카드 맞추기" sub="한자와 뜻·소리를 짝지어요" onBack={back} right={<span className="stat-btn"><Icon name="clock" size={20} />{((now - start) / 1000).toFixed(1)}초</span>} />
       <div className="match-grid">
         {tiles.map((t) => {
           const h = lv.byChar.get(t.c)!

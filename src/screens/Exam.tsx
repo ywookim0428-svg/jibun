@@ -21,17 +21,16 @@ export function Exam({ lv, go }: { lv: LevelData; go: Go }) {
     const last = st.exams.filter((e) => e.level === lv.id).slice(-5).reverse()
     return (
       <div className="page">
-        <TopBar title="📝 모의시험" onBack={home} />
+        <TopBar title="모의시험" onBack={home} />
         <div className="exam-intro">
-          <div className="mascot big">🐯</div>
           <h2>{ex.name} 시험처럼 풀어 봐요</h2>
           <p>진짜 시험은 {ex.total}문제 중에 {ex.pass}문제를 맞히면 합격이에요.<br />답을 고르면 바로 다음 문제로 넘어가요.</p>
           <ul className="exam-parts">{ex.parts.map((p) => <li key={p.type}><span>{p.label}</span><b>{p.count}문제</b></li>)}</ul>
           <div className="done-actions">
-            <button className="btn yellow" onClick={() => start(20)}>🐣 작은 시험 (20문제쯤)</button>
-            <button className="btn" onClick={() => start(ex.total)}>🏆 진짜 시험 ({ex.total}문제)</button>
+            <button className="btn" onClick={() => start(ex.total)}>진짜 시험 ({ex.total}문제)</button>
+            <button className="btn ghost" onClick={() => start(20)}>작은 시험 (20문제쯤)</button>
           </div>
-          {last.length > 0 && <div className="exam-hist"><h3>지난 기록</h3>{last.map((e) => <p key={e.date}>{new Date(e.date).toLocaleDateString('ko-KR')} · {e.score} / {e.total}점 {e.score / e.total >= ex.pass / ex.total ? '✅ 합격' : ''}</p>)}</div>}
+          {last.length > 0 && <div className="exam-hist"><h3>지난 기록</h3>{last.map((e) => <p key={e.date}>{new Date(e.date).toLocaleDateString('ko-KR')} · {e.score} / {e.total}점 {e.score / e.total >= ex.pass / ex.total ? '합격' : ''}</p>)}</div>}
         </div>
       </div>
     )
@@ -58,7 +57,7 @@ export function Exam({ lv, go }: { lv: LevelData; go: Go }) {
       )
     }
     return (
-      <Done title={pass ? '합격이에요! 🎉' : '끝까지 풀었어요!'} message={`${qs.length}문제 중에 ${score}문제를 맞혔어요 (합격은 ${need}문제부터)`} stars={score} sticker={sticker} actions={<>
+      <Done title={pass ? '합격이에요!' : '끝까지 풀었어요'} message={`${qs.length}문제 중에 ${score}문제를 맞혔어요 (합격은 ${need}문제부터)`} score={score} total={qs.length} stars={score} sticker={sticker} actions={<>
         {wrong.length > 0 && <button className="btn" onClick={() => setReview(true)}>틀린 문제 보기</button>}
         <button className="btn ghost" onClick={() => setQs(null)}>다시 풀기</button>
         <button className="btn ghost" onClick={home}>처음으로</button>
@@ -90,7 +89,7 @@ export function Exam({ lv, go }: { lv: LevelData; go: Go }) {
   }
   return (
     <div className="page run">
-      <TopBar title={`모의시험 ${i + 1} / ${qs.length}`} onBack={() => setQs(null)} />
+      <TopBar title="모의시험" sub={`${i + 1} / ${qs.length}`} onBack={() => setQs(null)} />
       <Progress value={i} max={qs.length} />
       <QuestionView key={i} q={q} lvStrokes={lv.strokes} picked={null} reveal={false} onPick={pick} />
     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { hunEum, wordsWith, type LevelData } from '../data'
-import { Hj, SpeakBtn, TopBar } from '../components/ui'
+import { Hj, Icon, SpeakBtn, TopBar } from '../components/ui'
 import { Modal } from './Home'
 import { statOf, useStore, MASTERED } from '../lib/store'
 import { sfx, speak } from '../lib/sound'
@@ -13,33 +13,38 @@ export function SetScreen({ lv, index, go }: { lv: LevelData; index: number; go:
   const [detail, setDetail] = useState<string | null>(null)
   const h = detail ? lv.byChar.get(detail)! : null
   const modes = [
-    { icon: '🃏', name: '낱말카드', desc: '카드를 뒤집어 봐요', color: 'blue', to: () => go({ name: 'cards', pool }) },
-    { icon: '🧠', name: '배우기', desc: '문제를 풀며 익혀요', color: 'green', to: () => go({ name: 'learn', pool }) },
-    { icon: '✍️', name: '필순', desc: '쓰는 순서를 배워요', color: 'orange', to: () => go({ name: 'stroke', pool }) },
-    { icon: '🧩', name: '짝 맞추기', desc: '빨리 짝을 찾아요', color: 'purple', to: () => go({ name: 'match', pool }) },
+    { icon: 'cards', name: '낱말카드', to: () => go({ name: 'cards', pool }) },
+    { icon: 'pen', name: '필순', to: () => go({ name: 'stroke', pool }) },
+    { icon: 'match', name: '카드 맞추기', to: () => go({ name: 'match', pool }) },
+    { icon: 'test', name: '모의시험', to: () => go({ name: 'exam' }) },
   ]
+  const mastered = set.chars.filter((c) => statOf(c).box >= MASTERED).length
   return (
     <div className="page">
-      <TopBar title={<>{set.icon} {set.name}</>} onBack={() => go({ name: 'home' })} />
-      <div className="mode-grid">
+      <TopBar title={set.name} sub={`한자 ${set.chars.length}자 · 익힘 ${mastered}자`} onBack={() => go({ name: 'home' })} />
+      <div className="mode-row">
+        <button className="mode primary" onClick={() => { sfx.tap(); go({ name: 'learn', pool }) }}><Icon name="learn" size={28} /><span><b>학습하기</b><small>문제를 풀며 익혀요</small></span></button>
         {modes.map((m) => (
-          <button key={m.name} className={`mode-card ${m.color}`} onClick={() => { sfx.tap(); m.to() }}>
-            <span>{m.icon}</span><strong>{m.name}</strong><small>{m.desc}</small>
-          </button>
+          <button key={m.name} className="mode" onClick={() => { sfx.tap(); m.to() }}><Icon name={m.icon} size={26} /><b>{m.name}</b></button>
         ))}
       </div>
-      <h3 className="sec">이 묶음의 한자 {set.chars.length}자</h3>
-      <div className="char-grid">
+      <h3 className="sec">이 세트의 한자 <span>{set.chars.length}자</span></h3>
+      <ul className="term-list">
         {set.chars.map((c) => {
           const x = lv.byChar.get(c)!, box = statOf(c).box
           return (
-            <button key={c} className="char-tile" onClick={() => { sfx.tap(); setDetail(c); speak(hunEum(x)) }}>
-              <Hj>{c}</Hj><small>{hunEum(x)}</small>
-              <i className={box >= MASTERED ? 'dot done' : box > 0 ? 'dot going' : 'dot'} />
-            </button>
+            <li key={c}>
+              <button className="term" onClick={() => { sfx.tap(); setDetail(c); speak(hunEum(x)) }}>
+                <Hj className="term-char">{c}</Hj>
+                <span className="term-he">{hunEum(x)}</span>
+                <span className="term-easy">{x.easy}</span>
+                <span className={`badge ${box >= MASTERED ? 'ok' : box > 0 ? 'going' : ''}`}>{box >= MASTERED ? '익힘' : box > 0 ? '학습 중' : '아직'}</span>
+              </button>
+              <SpeakBtn text={hunEum(x)} />
+            </li>
           )
         })}
-      </div>
+      </ul>
       {h && (
         <Modal title="한자 살펴보기" onClose={() => setDetail(null)}>
           <div className="detail">

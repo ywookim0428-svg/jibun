@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { hunEum, wordsWith, type LevelData } from '../data'
-import { Done, Hj, Progress, SpeakBtn, TopBar } from '../components/ui'
+import { Done, Hj, Icon, Progress, SpeakBtn, TopBar } from '../components/ui'
 import { shuffle } from '../lib/quiz'
 import { sfx, speak } from '../lib/sound'
 import { addStars } from '../lib/store'
@@ -20,7 +20,7 @@ export function Cards({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
   if (i >= deck.length) {
     const known = deck.length - unknown.length
     return (
-      <Done title="카드를 다 봤어요!" message={`아는 카드 ${known}장 · 더 볼 카드 ${unknown.length}장`} actions={<>
+      <Done title="카드를 다 봤어요" message={`알아요 ${known}장 · 다시 볼래요 ${unknown.length}장`} score={known} total={deck.length} actions={<>
         {unknown.length > 0 && <button className="btn" onClick={() => { setDeck(shuffle(unknown)); setUnknown([]); setI(0); setFlipped(false) }}>모르는 카드만 다시</button>}
         <button className="btn ghost" onClick={() => { setDeck(shuffle(pool.chars)); setUnknown([]); setI(0); setFlipped(false) }}>처음부터 다시</button>
         <button className="btn ghost" onClick={back}>그만하기</button>
@@ -40,9 +40,10 @@ export function Cards({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
       setI(i + 1); setFlipped(false); setFly(''); setDx(0)
     }, 260)
   }
-  const hanjaSide = <Hj className="card-hanja">{h.c}</Hj>
+  const hanjaSide = <><span className="face-label">한자</span><Hj className="card-hanja">{h.c}</Hj></>
   const infoSide = (
     <div className="card-info">
+      <span className="face-label">뜻과 소리</span>
       <div className="card-he">{hunEum(h)}</div>
       <p>{h.easy}{h.alt ? ` · ${h.alt}` : ''}</p>
       <ul className="word-list compact">
@@ -53,11 +54,10 @@ export function Cards({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
   return (
     <div className="page run">
       <TopBar title={pool.title} onBack={back} right={<>
-        <button className="pill" onClick={() => { sfx.tap(); setHanjaFront(!hanjaFront); setFlipped(false) }}>{hanjaFront ? '앞: 한자' : '앞: 뜻과 소리'}</button>
+        <button className="select" onClick={() => { sfx.tap(); setHanjaFront(!hanjaFront); setFlipped(false) }}>{hanjaFront ? '앞면: 한자' : '앞면: 뜻과 소리'}</button>
         <SpeakBtn text={hunEum(h)} />
       </>} />
       <Progress value={i} max={deck.length} />
-      <p className="count">{i + 1} / {deck.length}</p>
       <div className="card-stage">
         <div
           className={`flashcard ${flipped ? 'flipped' : ''} ${fly}`}
@@ -68,7 +68,7 @@ export function Cards({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
           onPointerCancel={() => { drag.current = null; setDx(0) }}
         >
           <div className="flash-inner">
-            <div className="face front">{hanjaFront ? hanjaSide : infoSide}<small className="tap-hint">톡! 눌러서 뒤집기</small></div>
+            <div className="face front">{hanjaFront ? hanjaSide : infoSide}<small className="tap-hint">눌러서 뒤집기</small></div>
             <div className="face back">{hanjaFront ? infoSide : hanjaSide}</div>
           </div>
           {dx > 40 && <span className="stamp ok">알아요!</span>}
@@ -76,8 +76,9 @@ export function Cards({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
         </div>
       </div>
       <div className="card-actions">
-        <button className="btn red" onClick={() => next(false)}>✕ 다시 볼래요</button>
-        <button className="btn green" onClick={() => next(true)}>알아요 ✓</button>
+        <button className="round no" aria-label="다시 볼래요" onClick={() => next(false)}><Icon name="close" size={30} /></button>
+        <div className="card-count"><b>{i + 1} / {deck.length}</b><small>← 다시 볼래요 · 알아요 →</small></div>
+        <button className="round ok" aria-label="알아요" onClick={() => next(true)}><Icon name="check" size={30} /></button>
       </div>
     </div>
   )

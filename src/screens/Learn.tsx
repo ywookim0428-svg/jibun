@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LevelData } from '../data'
-import { Done, Progress, QuestionView, TopBar } from '../components/ui'
+import { Done, Icon, Progress, QuestionView, TopBar } from '../components/ui'
 import { buildRound, type Question } from '../lib/quiz'
 import { sfx, speak } from '../lib/sound'
 import { addStars, awardSticker, grade } from '../lib/store'
@@ -25,7 +25,7 @@ export function Learn({ lv, pool, go, make }: { lv: LevelData; pool: Pool; go: G
   const restart = () => { const q = build(); retried.current.clear(); setQueue(q); setTotal(q.length); setI(0); setPicked(null); setFirstTry(0); setSticker('') }
   if (i >= queue.length) {
     return (
-      <Done title="한 판 끝!" message={`${total}문제 중에 ${firstTry}문제를 한 번에 맞혔어요`} stars={firstTry} sticker={sticker} actions={<>
+      <Done title="한 판을 끝냈어요" message={`${total}문제 중에 ${firstTry}문제를 한 번에 맞혔어요`} score={firstTry} total={total} stars={firstTry} sticker={sticker} actions={<>
         <button className="btn" onClick={restart}>한 판 더!</button>
         <button className="btn ghost" onClick={back}>그만하기</button>
       </>} />
@@ -50,15 +50,15 @@ export function Learn({ lv, pool, go, make }: { lv: LevelData; pool: Pool; go: G
   }
   return (
     <div className="page run">
-      <TopBar title={pool.title} onBack={back} right={<span className="chip">⭐ {firstTry}</span>} />
+      <TopBar title={pool.title} onBack={back} sub={`${Math.min(i + 1, queue.length)} / ${queue.length}`} right={<span className="stat-btn"><span className="star"><Icon name="star" fill size={20} /></span>{firstTry}</span>} />
       <Progress value={i} max={queue.length} />
       <QuestionView key={i} q={q} lvStrokes={lv.strokes} picked={picked} reveal={picked !== null} onPick={pick} />
-      {picked !== null && (
-        <div className={`feedback ${right ? 'ok' : 'no'}`}>
-          <div><strong>{right ? `🎉 ${PRAISE[i % PRAISE.length]}` : '🙂 괜찮아요, 다시 볼까요?'}</strong><span>{q.explain}</span></div>
-          <button className="btn" onClick={() => { sfx.tap(); next() }}>다음 ▶</button>
-        </div>
-      )}
+      <div className={`feedback ${picked === null ? 'idle' : right ? 'ok' : 'no'}`}>
+        {picked !== null && <>
+          <div><strong>{right ? PRAISE[i % PRAISE.length] : '다음에 한 번 더 나와요'}</strong><span>{q.explain}</span></div>
+          <button className="btn" onClick={() => { sfx.tap(); next() }}>다음</button>
+        </>}
+      </div>
     </div>
   )
 }

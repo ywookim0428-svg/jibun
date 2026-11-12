@@ -9,11 +9,36 @@ export const Hj = ({ children, className = '' }: { children: ReactNode; classNam
   <span className={`hj ${className}`} lang="ko">{children}</span>
 )
 
-export function TopBar({ title, onBack, right }: { title: ReactNode; onBack?: () => void; right?: ReactNode }) {
+const ICONS: Record<string, string> = {
+  back: 'M15 5l-7 7 7 7',
+  close: 'M6 6l12 12M18 6L6 18',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  cards: 'M4 8h12v11H4zM8 8V5h12v11h-4',
+  learn: 'M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4',
+  pen: 'M4 20l1-4L16.5 4.5l3 3L8 19l-4 1zM14 7l3 3',
+  match: 'M4 4h7v7H4zM13 13h7v7h-7zM13 4h7v7h-7zM4 13h7v7H4z',
+  test: 'M8 4h8v3H8zM6 5.5H5v15h14v-15h-1M9 12h6M9 16h6',
+  sound: 'M4 10v4h3l5 4V6L7 10H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11',
+  gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1',
+  star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.8z',
+  shuffle: 'M4 7h3c5 0 5 10 10 10h3M4 17h3c2 0 3-1.5 4-3.2M20 7h-3c-1.6 0-2.7 1-3.6 2.3M18 4.5L20.5 7 18 9.5M18 14.5l2.5 2.5-2.5 2.5',
+  next: 'M9 5l7 7-7 7',
+  redo: 'M5 12a7 7 0 1 1 2.2 5.1M5 18v-4h4',
+  eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+  book: 'M5 4h13v16H5zM9 4v16M12 8h3M12 11h3',
+  clock: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4.5l3 2',
+  chevron: 'M7 10l5 5 5-5',
+}
+/** 선으로 그린 아이콘 */
+export const Icon = ({ name, size = 24, fill }: { name: string; size?: number; fill?: boolean }) => (
+  <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={ICONS[name]} /></svg>
+)
+
+export function TopBar({ title, sub, onBack, right }: { title: ReactNode; sub?: ReactNode; onBack?: () => void; right?: ReactNode }) {
   return (
     <header className="topbar">
-      {onBack ? <button className="icon-btn" aria-label="뒤로" onClick={() => { sfx.tap(); onBack() }}>←</button> : <span className="icon-gap" />}
-      <h1>{title}</h1>
+      {onBack && <button className="icon-btn" aria-label="뒤로" onClick={() => { sfx.tap(); onBack() }}><Icon name="back" /></button>}
+      <div className="topbar-title"><h1>{title}</h1>{sub && <small>{sub}</small>}</div>
       <div className="topbar-right">{right}</div>
     </header>
   )
@@ -49,7 +74,7 @@ export function Writer({ char, data, mode, size, runKey, onDone }: { char: strin
     const writer = HanziWriter.create(el, char, {
       width: size, height: size, padding: size * 0.06,
       charDataLoader: (_c, onLoad) => onLoad(data),
-      strokeColor: '#2b2f4a', outlineColor: '#d9dcf0', highlightColor: '#ff8a3d', drawingColor: '#4255ff',
+      strokeColor: '#282e3e', outlineColor: '#d9dde8', highlightColor: '#ffcd1f', drawingColor: '#4255ff',
       drawingWidth: Math.max(18, size / 14), strokeAnimationSpeed: 0.8, delayBetweenStrokes: 350,
       showCharacter: mode === 'animate', showOutline: true, showHintAfterMisses: 2, leniency: 1.6,
     })
@@ -72,21 +97,23 @@ export function Writer({ char, data, mode, size, runKey, onDone }: { char: strin
 export function QuestionView({ q, lvStrokes, picked, reveal, onPick }: { q: Question; lvStrokes: Record<string, StrokeData>; picked: number | null; reveal: boolean; onPick: (i: number) => void }) {
   const long = q.choices.some((c) => c.label.length > 9)
   return (
-    <div className="question">
-      <p className="q-title">{q.title}</p>
+    <div className="q-card">
+      <p className="q-label">{q.title}</p>
       <div className="q-prompt">
-        {q.stroke && <StrokeSvg data={lvStrokes[q.stroke.char]} highlight={q.stroke.index} size={260} />}
+        {q.stroke && <StrokeSvg data={lvStrokes[q.stroke.char]} highlight={q.stroke.index} size={230} />}
         {q.hanja && <Hj className={`q-hanja len${Math.min(4, [...q.hanja].length)}`}>{q.hanja}</Hj>}
         {q.text && <div className={`q-text ${q.text.length > 8 ? 'small' : ''}`}>{q.text}</div>}
         {q.sentence && <div className="q-sentence">{q.sentence[0]}<Hj className="q-mark">{q.sentence[1]}</Hj>{q.sentence[2]}</div>}
         {q.hint && <div className="q-hint">{q.hint}</div>}
       </div>
+      <p className="q-pick">{reveal ? (picked === q.answer ? '정답이에요!' : '괜찮아요, 정답을 확인해요') : '정답을 골라요'}</p>
       <div className={`choices ${long ? 'long' : ''}`}>
         {q.choices.map((c, i) => {
-          const state = reveal ? (i === q.answer ? 'right' : i === picked ? 'wrong' : 'dim') : i === picked ? 'picked' : ''
+          const state = reveal ? (i === q.answer ? 'right' : i === picked ? 'wrong' : 'dim') : ''
           return (
             <button key={i} className={`choice ${state}`} disabled={reveal} onClick={() => onPick(i)}>
-              {c.hanja ? <Hj className="choice-hanja">{c.label}</Hj> : c.label}
+              <span className="num">{state === 'right' ? <Icon name="check" size={18} /> : state === 'wrong' ? <Icon name="close" size={18} /> : i + 1}</span>
+              {c.hanja ? <Hj className="choice-hanja">{c.label}</Hj> : <span>{c.label}</span>}
             </button>
           )
         })}
@@ -96,9 +123,9 @@ export function QuestionView({ q, lvStrokes, picked, reveal, onPick }: { q: Ques
 }
 
 export function Confetti() {
-  const bits = useMemo(() => Array.from({ length: 60 }, (_, i) => ({
+  const bits = useMemo(() => Array.from({ length: 36 }, (_, i) => ({
     left: Math.random() * 100, delay: Math.random() * 0.6, dur: 1.8 + Math.random() * 1.6,
-    color: ['#4255ff', '#ffcd1f', '#23b26d', '#ff6b6b', '#a66bff', '#3ccfcf'][i % 6], rot: Math.random() * 360,
+    color: ['#4255ff', '#ffcd1f', '#18ae79', '#4255ff', '#ffcd1f', '#98a2ff'][i % 6], rot: Math.random() * 360,
   })), [])
   return (
     <div className="confetti" aria-hidden>
@@ -107,18 +134,28 @@ export function Confetti() {
   )
 }
 
-/** 끝났을 때 칭찬 화면 */
-export function Done({ title, message, stars, sticker, children, actions }: { title: string; message?: string; stars?: number; sticker?: string; children?: ReactNode; actions: ReactNode }) {
+/** 끝났을 때 결과 화면. score/total을 주면 동그란 점수 그래프를 보여 줘요 */
+export function Done({ title, message, score, total, stars, sticker, children, actions }: { title: string; message?: string; score?: number; total?: number; stars?: number; sticker?: string; children?: ReactNode; actions: ReactNode }) {
   useEffect(() => { sfx.fanfare() }, [])
+  const pct = total ? Math.round(((score ?? 0) / total) * 100) : null
   return (
-    <div className="done">
+    <div className="page done">
       <Confetti />
       <div className="done-card">
-        <div className="mascot big">🐯</div>
-        <h2>{title}</h2>
-        {message && <p>{message}</p>}
-        {stars !== undefined && <div className="done-stars">⭐ 별 {stars}개를 받았어요!</div>}
-        {sticker && <div className="done-sticker"><span>{sticker}</span><small>새 스티커!</small></div>}
+        <div className="done-top">
+          {pct !== null && (
+            <svg className="ring" viewBox="0 0 120 120" width="132" height="132" aria-label={`${pct}퍼센트`}>
+              <circle cx="60" cy="60" r="50" className="ring-bg" />
+              <circle cx="60" cy="60" r="50" className="ring-fg" strokeDasharray={`${pct * 3.1416} 400`} transform="rotate(-90 60 60)" />
+              <text x="60" y="68" textAnchor="middle">{pct}%</text>
+            </svg>
+          )}
+          <div><h2>{title}</h2>{message && <p>{message}</p>}</div>
+        </div>
+        <div className="done-rewards">
+          {stars !== undefined && <div className="reward"><span className="star"><Icon name="star" fill size={30} /></span><b>별 {stars}개</b><small>받았어요</small></div>}
+          {sticker && <div className="reward"><span className="sticker">{sticker}</span><b>새 스티커</b><small>스티커북에 넣었어요</small></div>}
+        </div>
         {children}
         <div className="done-actions">{actions}</div>
       </div>
@@ -127,5 +164,5 @@ export function Done({ title, message, stars, sticker, children, actions }: { ti
 }
 
 export const SpeakBtn = ({ text }: { text: string }) => (
-  <button className="icon-btn" aria-label="소리 듣기" onClick={(e) => { e.stopPropagation(); speak(text) }}>🔊</button>
+  <button className="icon-btn plain" aria-label="소리 듣기" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); speak(text) }}><Icon name="sound" /></button>
 )
