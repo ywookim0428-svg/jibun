@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { LEVEL_LIST, type LevelData } from '../data'
-import { Hj, Icon, Progress } from '../components/ui'
+import { Hj, Icon, Mascot, Progress } from '../components/ui'
 import { isDue, isMastered, resetAll, setState, statOf, useStore, STICKERS } from '../lib/store'
 import { sfx } from '../lib/sound'
 import type { Go } from '../App'
@@ -17,10 +17,10 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
   const open = (m: typeof modal) => { sfx.tap(); setSure(false); setModal(m) }
   const nav = (r: Parameters<Go>[0]) => { sfx.tap(); go(r) }
   const cont = due.length
-    ? { label: '오늘의 복습', title: `다시 볼 한자 ${due.length}자`, chars: due.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'review', title: '오늘의 복습', chars: due } }) }
+    ? { label: '오늘의 복습', say: '다시 볼 한자가 있어!', title: `다시 볼 한자 ${due.length}자`, chars: due.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'review', title: '오늘의 복습', chars: due } }) }
     : nextSet >= 0
-      ? { label: mastered || started ? '이어서 하기' : '여기서 시작해요', title: lv.sets[nextSet].name, chars: lv.sets[nextSet].chars.slice(0, 6), to: () => nav({ name: 'set', set: nextSet }) }
-      : { label: '모두 익혔어요', title: '모든 한자 섞어서 풀기', chars: all.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'all', title: '모든 한자', chars: all } }) }
+      ? { label: mastered || started ? '이어서 하기' : '여기서 시작해요', say: mastered || started ? '오늘도 같이 해 보자!' : '안녕! 나는 호야야. 같이 한자 배우자!', title: `${lv.sets[nextSet].icon} ${lv.sets[nextSet].name}`, chars: lv.sets[nextSet].chars.slice(0, 6), to: () => nav({ name: 'set', set: nextSet }) }
+      : { label: '모두 익혔어요', say: '우아, 다 익혔구나! 최고야!', title: '모든 한자 섞어서 풀기', chars: all.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'all', title: '모든 한자', chars: all } }) }
   return (
     <div className="page home">
       <nav className="navbar">
@@ -37,6 +37,7 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
           <h2>{cont.title}</h2>
           <Hj className="continue-chars">{cont.chars.join(' ')}</Hj>
           <button className="btn" onClick={cont.to}>학습 시작</button>
+          <div className="hoya"><p className="bubble">{cont.say}</p><Mascot mood={nextSet < 0 && !due.length ? 'cheer' : 'happy'} size={120} className="bob" /></div>
         </div>
         <div className="summary">
           <div className="summary-head"><b>{lv.exam.name} 진도</b><span>{mastered} / {all.length}자</span></div>
@@ -62,7 +63,7 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
           const doneAll = m === s.chars.length
           return (
             <button key={i} className="set-card" onClick={() => nav({ name: 'set', set: i })}>
-              <div className="set-top"><strong>{s.name}</strong>{doneAll && <span className="badge ok"><Icon name="check" size={14} />완료</span>}</div>
+              <div className="set-top"><span className="set-emoji">{s.icon}</span><strong>{s.name}</strong>{doneAll && <span className="badge ok"><Icon name="check" size={14} />완료</span>}</div>
               <span className="badge">한자 {s.chars.length}자</span>
               <Hj className="set-preview">{s.chars.slice(0, 6).join(' ')}</Hj>
               <div className="set-foot"><Progress value={m} max={s.chars.length} /><small>{m}/{s.chars.length}</small></div>

@@ -4,6 +4,46 @@ import type { StrokeData } from '../data'
 import type { Question } from '../lib/quiz'
 import { sfx, speak } from '../lib/sound'
 
+/** 호랑이 친구 "호야". mood에 따라 표정이 바뀌어요 */
+export function Mascot({ mood = 'happy', size = 96, className = '' }: { mood?: 'happy' | 'cheer' | 'oops'; size?: number; className?: string }) {
+  const ink = '#282e3e'
+  return (
+    <svg className={`mascot ${mood} ${className}`} viewBox="0 0 120 120" width={size} height={size} role="img" aria-label="호랑이 친구 호야">
+      <circle cx="28" cy="30" r="15" fill="#ffa62b" /><circle cx="92" cy="30" r="15" fill="#ffa62b" />
+      <circle cx="28" cy="31" r="7" fill="#ffd9b0" /><circle cx="92" cy="31" r="7" fill="#ffd9b0" />
+      <circle cx="60" cy="66" r="45" fill="#ffb84d" />
+      <g stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none">
+        <path d="M60 23v13M46 27l3 10M74 27l-3 10M17 62h10M19 76h9M103 62H93M101 76h-9" />
+      </g>
+      <ellipse cx="60" cy="83" rx="24" ry="17" fill="#fff6e8" />
+      <circle cx="33" cy="76" r="7" fill="#ff8f7a" opacity=".55" /><circle cx="87" cy="76" r="7" fill="#ff8f7a" opacity=".55" />
+      <path d="M54 72h12l-6 7z" fill={ink} stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+      {mood === 'cheer' ? (
+        <>
+          <path d="M37 60q7-10 14 0M69 60q7-10 14 0" stroke={ink} strokeWidth="5" strokeLinecap="round" fill="none" />
+          <path d="M49 84q11 17 22 0z" fill="#d9483a" stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+        </>
+      ) : mood === 'oops' ? (
+        <>
+          <circle cx="44" cy="60" r="5.5" fill={ink} /><circle cx="76" cy="60" r="5.5" fill={ink} />
+          <path d="M36 50l12 3M84 50l-12 3" stroke={ink} strokeWidth="4" strokeLinecap="round" />
+          <path d="M53 91q7-6 14 0" stroke={ink} strokeWidth="4" strokeLinecap="round" fill="none" />
+        </>
+      ) : (
+        <>
+          <circle cx="44" cy="59" r="6" fill={ink} /><circle cx="76" cy="59" r="6" fill={ink} />
+          <circle cx="46" cy="57" r="2" fill="#fff" /><circle cx="78" cy="57" r="2" fill="#fff" />
+          <path d="M51 86q9 8 18 0" stroke={ink} strokeWidth="4" strokeLinecap="round" fill="none" />
+        </>
+      )}
+    </svg>
+  )
+}
+/** 별이 팡 터지는 효과 */
+export const Burst = () => (
+  <span className="burst" aria-hidden>{[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <i key={i} style={{ ['--a' as string]: `${i * 45}deg` }} />)}</span>
+)
+
 /** 한자를 명조체로 보여 줘요 */
 export const Hj = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
   <span className={`hj ${className}`} lang="ko">{children}</span>
@@ -142,6 +182,7 @@ export function Done({ title, message, score, total, stars, sticker, children, a
     <div className="page done">
       <Confetti />
       <div className="done-card">
+        <div className="done-mascot"><Mascot mood="cheer" size={120} className="jump" /><Burst /></div>
         <div className="done-top">
           {pct !== null && (
             <svg className="ring" viewBox="0 0 120 120" width="132" height="132" aria-label={`${pct}퍼센트`}>
@@ -154,7 +195,7 @@ export function Done({ title, message, score, total, stars, sticker, children, a
         </div>
         <div className="done-rewards">
           {stars !== undefined && <div className="reward"><span className="star"><Icon name="star" fill size={30} /></span><b>별 {stars}개</b><small>받았어요</small></div>}
-          {sticker && <div className="reward"><span className="sticker">{sticker}</span><b>새 스티커</b><small>스티커북에 넣었어요</small></div>}
+          {sticker && <div className="reward"><span className="sticker stick-in">{sticker}</span><b>새 스티커</b><small>스티커북에 넣었어요</small></div>}
         </div>
         {children}
         <div className="done-actions">{actions}</div>

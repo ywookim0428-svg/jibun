@@ -21,7 +21,7 @@ export function SetScreen({ lv, index, go }: { lv: LevelData; index: number; go:
   const mastered = set.chars.filter((c) => statOf(c).box >= MASTERED).length
   return (
     <div className="page">
-      <TopBar title={set.name} sub={`한자 ${set.chars.length}자 · 익힘 ${mastered}자`} onBack={() => go({ name: 'home' })} />
+      <TopBar title={<>{set.icon} {set.name}</>} sub={`한자 ${set.chars.length}자 · 익힘 ${mastered}자`} onBack={() => go({ name: 'home' })} />
       <div className="mode-row">
         <button className="mode primary" onClick={() => { sfx.tap(); go({ name: 'learn', pool }) }}><Icon name="learn" size={28} /><span><b>학습하기</b><small>문제를 풀며 익혀요</small></span></button>
         {modes.map((m) => (

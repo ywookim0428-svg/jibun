@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { LevelData } from '../data'
-import { Done, Hj, Progress, QuestionView, TopBar } from '../components/ui'
+import { Done, Hj, Mascot, Progress, QuestionView, TopBar } from '../components/ui'
 import { buildExam, type Question } from '../lib/quiz'
 import { sfx } from '../lib/sound'
 import { addStars, awardSticker, getState, grade, setState, useStore } from '../lib/store'
@@ -23,7 +23,7 @@ export function Exam({ lv, go }: { lv: LevelData; go: Go }) {
       <div className="page">
         <TopBar title="모의시험" onBack={home} />
         <div className="exam-intro">
-          <h2>{ex.name} 시험처럼 풀어 봐요</h2>
+          <div className="exam-hoya"><Mascot size={84} className="bob" /><h2>{ex.name} 시험처럼 풀어 봐요</h2></div>
           <p>진짜 시험은 {ex.total}문제 중에 {ex.pass}문제를 맞히면 합격이에요.<br />답을 고르면 바로 다음 문제로 넘어가요.</p>
           <ul className="exam-parts">{ex.parts.map((p) => <li key={p.type}><span>{p.label}</span><b>{p.count}문제</b></li>)}</ul>
           <div className="done-actions">

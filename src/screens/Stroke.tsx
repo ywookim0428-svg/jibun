@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { hunEum, type LevelData } from '../data'
-import { Hj, Icon, SpeakBtn, TopBar, Writer } from '../components/ui'
+import { Hj, Icon, Mascot, SpeakBtn, TopBar, Writer } from '../components/ui'
 import { qStroke, shuffle, type Question } from '../lib/quiz'
 import { sfx } from '../lib/sound'
 import { addStars } from '../lib/store'
@@ -49,7 +49,7 @@ export function Stroke({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) 
           setMsg(miss === 0 ? '한 번도 안 틀렸어요!' : '다 썼어요! 잘했어요')
         }} />
       </div>
-      <p className="count">{msg || (mode === 'quiz' ? '손가락이나 펜으로 순서대로 써 보세요' : '쓰는 순서를 잘 보세요')}</p>
+      <p className="count stroke-msg">{msg && <Mascot mood="cheer" size={44} className="jump" />}{msg || (mode === 'quiz' ? '손가락이나 펜으로 순서대로 써 보세요' : '쓰는 순서를 잘 보세요')}</p>
       <div className="card-actions">
         <button className="btn ghost" disabled={idx === 0} onClick={() => choose(chars[idx - 1])}>앞 글자</button>
         <button className="btn ghost" onClick={() => { sfx.tap(); setMsg(''); setRunKey((k) => k + 1) }}><Icon name="redo" size={20} />다시</button>

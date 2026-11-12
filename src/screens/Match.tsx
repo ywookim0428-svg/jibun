@@ -33,7 +33,7 @@ export function Match({ lv, pool, go }: { lv: LevelData; pool: Pool; go: Go }) {
     if (!sel) { sfx.tap(); setSel(t); return }
     if (sel.id === t.id) { setSel(null); return }
     if (sel.c === t.c && sel.hanja !== t.hanja) {
-      sfx.pop()
+      sfx.pop(); setTimeout(() => sfx.correct(), 120)
       const g = [...gone, t.c]
       setGone(g); setSel(null)
       if (g.length === tiles.length / 2) {
