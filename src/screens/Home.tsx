@@ -8,11 +8,12 @@ import type { Go } from '../App'
 export function Home({ lv, go }: { lv: LevelData; go: Go }) {
   const st = useStore()
   const [modal, setModal] = useState<'level' | 'settings' | 'stickers' | null>(null)
+  const [sure, setSure] = useState(false)
   const all = lv.chars.map((h) => h.c)
   const due = all.filter(isDue)
   const mastered = all.filter(isMastered).length
   const nextSet = lv.sets.findIndex((s) => !s.chars.every(isMastered))
-  const open = (m: typeof modal) => { sfx.tap(); setModal(m) }
+  const open = (m: typeof modal) => { sfx.tap(); setSure(false); setModal(m) }
   return (
     <div className="page home">
       <header className="home-head">
@@ -83,7 +84,7 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
         <Modal title="설정" onClose={() => setModal(null)}>
           <label className="toggle"><span>🔔 효과음</span><input type="checkbox" checked={st.sound} onChange={(e) => { setState({ sound: e.target.checked }); sfx.tap() }} /></label>
           <label className="toggle"><span>🔊 읽어 주기</span><input type="checkbox" checked={st.voice} onChange={(e) => setState({ voice: e.target.checked })} /></label>
-          <button className="btn ghost danger" onClick={() => { if (confirm('학습 기록과 스티커를 모두 지울까요?')) { resetAll(); setModal(null) } }}>학습 기록 지우기</button>
+          <button className="btn ghost danger" onClick={() => { if (sure) { resetAll(); setSure(false); setModal(null) } else setSure(true) }}>{sure ? '정말 지울까요? 한 번 더 누르면 지워져요' : '학습 기록 지우기'}</button>
           <p className="muted small">{lv.exam.org} {lv.exam.name} 기준 · 한자 {lv.chars.length}자 · 한자어 {lv.words.length}개<br />획순 데이터: Make Me a Hanzi (Arphic Public License) · 글꼴: Noto Serif KR (SIL OFL)</p>
         </Modal>
       )}

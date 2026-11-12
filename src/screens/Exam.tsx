@@ -90,7 +90,7 @@ export function Exam({ lv, go }: { lv: LevelData; go: Go }) {
   }
   return (
     <div className="page run">
-      <TopBar title={`모의시험 ${i + 1} / ${qs.length}`} onBack={() => { if (confirm('시험을 그만할까요?')) setQs(null) }} />
+      <TopBar title={`모의시험 ${i + 1} / ${qs.length}`} onBack={() => setQs(null)} />
       <Progress value={i} max={qs.length} />
       <QuestionView key={i} q={q} lvStrokes={lv.strokes} picked={null} reveal={false} onPick={pick} />
     </div>

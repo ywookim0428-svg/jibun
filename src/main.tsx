@@ -7,5 +7,5 @@ import App from './App'
 import { unlockAudio } from './lib/sound'
 
 unlockAudio()
-registerSW({ immediate: true })
+if (!import.meta.env.VITE_NO_SW) registerSW({ immediate: true })
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
