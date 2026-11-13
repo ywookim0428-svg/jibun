@@ -1,0 +1,14 @@
+{
+  "name": "7급",
+  "org": "한국어문회 한자능력검정시험",
+  "total": 70,
+  "pass": 49,
+  "parts": [
+    { "type": "reading", "count": 32, "label": "한자어 읽기" },
+    { "type": "hunEum", "count": 30, "label": "훈과 음" },
+    { "type": "antonym", "count": 2, "label": "반대말" },
+    { "type": "idiom", "count": 2, "label": "빈칸 채우기" },
+    { "type": "meaning", "count": 2, "label": "뜻풀이" },
+    { "type": "stroke", "count": 2, "label": "필순" }
+  ]
+}
