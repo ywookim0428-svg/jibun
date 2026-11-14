@@ -49,7 +49,8 @@ export const sfx = {
 export function speak(text: string) {
   if (!getState().voice || !('speechSynthesis' in window)) return
   speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
+  // 괄호 속 두음법칙 소리는 빼고, '/'는 쉼으로 읽어요
+  const u = new SpeechSynthesisUtterance(text.replace(/\([^)]*\)/g, '').replace(/\//g, ', '))
   u.lang = 'ko-KR'
   u.rate = 0.85
   speechSynthesis.speak(u)
