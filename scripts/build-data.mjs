@@ -19,7 +19,7 @@ for (const [c, , e, , , x] of chars) {
   if (x) x.split('/').forEach((r) => { const s = r.trim().split(' ').pop(); set.add(s); set.add(dueum(s)) })
   eums.set(c, set)
 }
-const extra = { 六: ['유'], 十: ['시'], 數: ['숫'] }
+const extra = { 六: ['유'], 十: ['시'], 數: ['숫'], 不: ['부'], 車: ['차'] }
 for (const [c, l] of Object.entries(extra)) l.forEach((e) => eums.get(c).add(e))
 let errors = 0
 const err = (m) => { errors++; console.log('❌', m) }

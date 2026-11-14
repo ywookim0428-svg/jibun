@@ -8,7 +8,8 @@ import strokeOrder7 from './7/stroke-order.txt?raw'
 import strokes7 from './7/strokes.json'
 import exam7 from './7/exam.json'
 
-export interface HanjaChar { c: string; hun: string; eum: string; level: string; easy: string; alt?: string; set: number }
+/** show: 교재 표기대로 보여 줄 음 (예: 력(역)). 없으면 eum */
+export interface HanjaChar { c: string; hun: string; eum: string; level: string; easy: string; alt?: string; show?: string; set: number }
 export interface Word { w: string; r: string; m: string; s?: string }
 export interface StudySet { name: string; icon: string; chars: string[] }
 export interface StrokeData { strokes: string[]; medians: number[][][] }
@@ -34,8 +35,8 @@ function build(id: string, r: { chars: string; sets: string; words: string; pair
   const setOf = new Map<string, number>()
   sets.forEach((s, i) => s.chars.forEach((c) => setOf.set(c, i)))
   const chars = lines(r.chars).map((l) => {
-    const [c, hun, eum, level, easy, alt] = l.split('|')
-    return { c, hun, eum, level, easy, alt: alt || undefined, set: setOf.get(c) ?? 0 }
+    const [c, hun, eum, level, easy, alt, show] = l.split('|')
+    return { c, hun, eum, level, easy, alt: alt || undefined, show: show || undefined, set: setOf.get(c) ?? 0 }
   })
   const words = lines(r.words).map((l) => { const [w, rd, m, s] = l.split('|'); return { w, r: rd, m, s: s || undefined } })
   const antonyms: [string, string][] = []
@@ -70,5 +71,5 @@ export const LEVEL_LIST = [
   { id: '5', name: '5급', ready: false },
 ]
 
-export const hunEum = (h: HanjaChar) => `${h.hun} ${h.eum}`
+export const hunEum = (h: HanjaChar) => `${h.hun} ${h.show ?? h.eum}`
 export const wordsWith = (lv: LevelData, c: string) => lv.words.filter((w) => w.w.includes(c))
