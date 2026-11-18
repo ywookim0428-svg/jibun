@@ -246,3 +246,7 @@ h1, h2, h3, p, ul { margin: 0; padding: 0; } ul { list-style: none; }
 .stroke-msg { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; }
 @media (max-width: 760px) { .hoya { position: static; flex-direction: row-reverse; align-items: center; align-self: flex-end; } .bubble { margin-right: 0; border-radius: 14px 14px 14px 4px; } }
 @media (min-width: 761px) { .continue-main h2, .continue-chars { max-width: calc(100% - 230px); } .continue-chars { white-space: nowrap; overflow: hidden; } }
+.continue-info { color: var(--muted); font-weight: 600; font-size: 15px; margin-top: -6px; }
+.continue-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.tools { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 760px) { .tools { grid-template-columns: 1fr 1fr; } }
