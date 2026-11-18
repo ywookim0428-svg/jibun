@@ -16,11 +16,13 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
   const nextSet = lv.sets.findIndex((s) => !s.chars.every(isMastered))
   const open = (m: typeof modal) => { sfx.tap(); setSure(false); setModal(m) }
   const nav = (r: Parameters<Go>[0]) => { sfx.tap(); go(r) }
-  const cont = due.length
-    ? { label: '오늘의 복습', say: '다시 볼 한자가 있어!', title: `다시 볼 한자 ${due.length}자`, chars: due.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'review', title: '오늘의 복습', chars: due } }) }
-    : nextSet >= 0
-      ? { label: mastered || started ? '이어서 하기' : '여기서 시작해요', say: mastered || started ? '오늘도 같이 해 보자!' : '안녕! 나는 호야야. 같이 한자 배우자!', title: `${lv.sets[nextSet].icon} ${lv.sets[nextSet].name}`, chars: lv.sets[nextSet].chars.slice(0, 6), to: () => nav({ name: 'set', set: nextSet }) }
-      : { label: '모두 익혔어요', say: '우아, 다 익혔구나! 최고야!', title: '모든 한자 섞어서 풀기', chars: all.slice(0, 6), to: () => nav({ name: 'learn', pool: { key: 'all', title: '모든 한자', chars: all } }) }
+  // 홈 맨 위 카드는 항상 "오늘 공부할 부분" = 아직 다 익히지 않은 첫 세트
+  const today = nextSet >= 0 ? lv.sets[nextSet] : null
+  const todayPool = today ? { key: `set${nextSet}`, title: today.name, chars: today.chars } : { key: 'all', title: '모든 한자', chars: all }
+  const todayLeft = today ? today.chars.filter((c) => !isMastered(c)).length : 0
+  const cont = today
+    ? { label: '오늘 공부할 부분', say: mastered || started ? '오늘도 같이 해 보자!' : '안녕! 나는 호야야. 같이 한자 배우자!', title: `${today.icon} ${today.name}`, chars: today.chars.slice(0, 6), info: `${nextSet + 1}번째 세트 · 아직 익히지 않은 한자 ${todayLeft}자` }
+    : { label: '모두 익혔어요', say: '우아, 다 익혔구나! 최고야!', title: '모든 한자 섞어서 풀기', chars: all.slice(0, 6), info: `${lv.exam.name} 한자 ${all.length}자를 모두 익혔어요` }
   return (
     <div className="page home">
       <nav className="navbar">
@@ -36,8 +38,12 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
           <small>{cont.label}</small>
           <h2>{cont.title}</h2>
           <Hj className="continue-chars">{cont.chars.join(' ')}</Hj>
-          <button className="btn" onClick={cont.to}>학습 시작</button>
-          <div className="hoya"><p className="bubble">{cont.say}</p><Mascot mood={nextSet < 0 && !due.length ? 'cheer' : 'happy'} size={120} className="bob" /></div>
+          <p className="continue-info">{cont.info}</p>
+          <div className="continue-actions">
+            <button className="btn" onClick={() => nav({ name: 'learn', pool: todayPool })}>학습 시작</button>
+            {today && <button className="btn ghost" onClick={() => nav({ name: 'cards', pool: todayPool })}>카드로 보기</button>}
+          </div>
+          <div className="hoya"><p className="bubble">{cont.say}</p><Mascot mood={today ? 'happy' : 'cheer'} size={120} className="bob" /></div>
         </div>
         <div className="summary">
           <div className="summary-head"><b>{lv.exam.name} 진도</b><span>{mastered} / {all.length}자</span></div>
@@ -51,6 +57,7 @@ export function Home({ lv, go }: { lv: LevelData; go: Go }) {
       </section>
 
       <div className="tools">
+        <button className="tool" disabled={!due.length} onClick={() => nav({ name: 'learn', pool: { key: 'review', title: '복습하기', chars: due } })}><Icon name="learn" /><span><b>복습하기</b><small>{due.length ? `다시 볼 한자 ${due.length}자` : '지금은 복습할 한자가 없어요'}</small></span></button>
         <button className="tool" onClick={() => nav({ name: 'learn', pool: { key: 'all', title: '섞어서 풀기', chars: all } })}><Icon name="shuffle" /><span><b>섞어서 풀기</b><small>모든 한자에서 10문제</small></span></button>
         <button className="tool" onClick={() => nav({ name: 'exam' })}><Icon name="test" /><span><b>모의시험</b><small>진짜 시험처럼 풀기</small></span></button>
         <button className="tool" onClick={() => open('stickers')}><Icon name="book" /><span><b>스티커북</b><small>{new Set(st.stickers).size} / {STICKERS.length}장</small></span></button>
